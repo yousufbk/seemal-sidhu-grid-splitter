@@ -14,8 +14,9 @@ a.dl{display:inline-block;margin:4px 8px 4px 0;padding:8px 12px;background:#222;
 small{color:#555}
 </style></head><body>
 <h2>Seemal Sidhu — Puzzle Grid Splitter</h2>
-<p class="note"><b>Use:</b> 1) Picture select karen &nbsp;2) Layout + Fit/Crop chunen &nbsp;3) Picture ko <b>drag</b> karke set karen (face cut-line par na ho) &nbsp;4) “Tiles Banao” dabayen &nbsp;5) Tiles <b>01, 02, 03…</b> isi order me Instagram par post karen.<br>
-<b>Safe zone:</b> red dashed line ke andar face / text / logo rakhen — har tile ke kinare se 80px door.</p>
+<p class="note"><b>Use:</b> 1) Picture select karen &nbsp;2) Layout + Format + Fit/Crop chunen &nbsp;3) Picture ko <b>drag</b> karke set karen (face cut-line par na ho) &nbsp;4) “Tiles Banao” dabayen &nbsp;5) Tiles <b>01, 02, 03…</b> isi order me Instagram par post karen.<br>
+<b>Exact grid buffer (net se verified):</b> Profile grid har post ko <b>3:4</b> me dikhati hai. <b>3:4 format (1080×1440) = grid crop 0px</b> — kuch gayab nahi hota. <b>4:5 format (1080×1350) = grid me left 35px + right 35px gayab</b> (sirf centre 1010px dikhta hai, post kholne par poora dikhta hai). Square (1080×1080) = 135px har side se gayab.<br>
+<b>Safe zone:</b> red dashed line ke andar face / text / logo rakhen — har tile ke kinare se 80px door. 4:5 me orange lines = wo 35px hissa jo grid me nahi dikhega, us me sirf background rakhen.</p>
 
 <div class="row"><input type="file" id="f" accept="image/*"></div>
 <div id="qwarn" class="warn"></div><div id="qok" class="ok"></div>
@@ -28,6 +29,11 @@ small{color:#555}
 <option value="3x2" selected>3 x 2 (6 posts)</option>
 <option value="3x3">3 x 3 (9 posts)</option>
 <option value="3x4">3 x 4 (12 posts)</option>
+</select></label>
+<label>Format:
+<select id="format">
+<option value="1440" selected>3:4 — 1080 x 1440 (grid crop 0, recommended)</option>
+<option value="1350">4:5 Safe — 1080 x 1350 (35px side buffer)</option>
 </select></label>
 <label>Mode:
 <select id="mode">
@@ -46,8 +52,8 @@ small{color:#555}
 <canvas id="cv" width="900" height="800"></canvas>
 <p><small>Preview ko mouse ya ungli se drag karen. White lines = cut lines (jahan se picture kategi).</small></p>
 
-<div class="row"><button id="go" type="button">Tiles Banao (1080 x 1440 har tile)</button>
-<button id="prev" type="button">Grid Preview Download</button></div>
+<div class="row"><button id="go" type="button">Tiles Banao</button>
+<button id="prev" type="button">Grid Preview Download (jaisa Insta grid me dikhega)</button></div>
 <div id="out"></div>
 
 <script>
@@ -55,7 +61,8 @@ small{color:#555}
 var img=null, dx=0, dy=0, dragging=false, lastX=0, lastY=0;
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 function layout(){var v=document.getElementById('layout').value.split('x');return {cols:+v[0], rows:+v[1]};}
-function dims(){var L=layout();return {W:L.cols*1080, H:L.rows*1440, cols:L.cols, rows:L.rows};}
+function tileH(){return +document.getElementById('format').value;}
+function dims(){var L=layout(),th=tileH();return {W:L.cols*1080, H:L.rows*th, cols:L.cols, rows:L.rows, th:th};}
 function quality(){
   var d=dims(), w=document.getElementById('qwarn'), o=document.getElementById('qok');
   if(!img){w.style.display='none';o.style.display='none';return;}
@@ -87,8 +94,15 @@ function draw(){
   var pw=Math.min(900,d.W), ph=Math.round(pw*d.H/d.W);
   cv.width=pw; cv.height=ph;
   ctx.drawImage(m,0,0,pw,ph);
-  var sx=pw/d.W, sy=ph/d.H, tw=1080*sx, th=1440*sy;
+  var sx=pw/d.W, sy=ph/d.H, tw=1080*sx, th=d.th*sy;
   if(document.getElementById('safe').checked && img){
+    if(d.th===1350){ // 4:5: orange lines at 35px = grid-crop buffer, outside it grid me gayab
+      ctx.strokeStyle='orange'; ctx.setLineDash([6,5]); ctx.lineWidth=2;
+      for(var r2=0;r2<d.rows;r2++)for(var c2=0;c2<d.cols;c2++){
+        ctx.beginPath();ctx.moveTo(c2*tw+35*sx,r2*th);ctx.lineTo(c2*tw+35*sx,(r2+1)*th);ctx.stroke();
+        ctx.beginPath();ctx.moveTo((c2+1)*tw-35*sx,r2*th);ctx.lineTo((c2+1)*tw-35*sx,(r2+1)*th);ctx.stroke();
+      }
+    }
     ctx.strokeStyle='red'; ctx.setLineDash([9,7]); ctx.lineWidth=2;
     for(var r=0;r<d.rows;r++)for(var col=0;col<d.cols;col++){
       ctx.strokeRect(col*tw+80*sx, r*th+80*sy, tw-160*sx, th-160*sy);
@@ -106,7 +120,7 @@ document.getElementById('f').addEventListener('change',function(e){
   im.onload=function(){img=im; resetPos(); quality();};
   im.src=url;
 });
-['layout','mode','bg','safe'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){quality();draw();});});
+['layout','mode','bg','safe','format'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){quality();draw();});});
 document.getElementById('zoom').addEventListener('input',draw);
 document.getElementById('reset').addEventListener('click',resetPos);
 cv.addEventListener('pointerdown',function(e){if(!img)return;dragging=true;lastX=e.clientX;lastY=e.clientY;cv.setPointerCapture(e.pointerId);});
@@ -125,19 +139,22 @@ document.getElementById('go').addEventListener('click',function(){
   out.innerHTML='<h3>Isi order me post karen — pehle 01, phir 02…</h3>';
   var n=0;
   for(var r=d.rows-1;r>=0;r--)for(var col=d.cols-1;col>=0;col--){ n++;
-    var t=document.createElement('canvas'); t.width=1080; t.height=1440;
-    t.getContext('2d').drawImage(m,col*1080,r*1440,1080,1440,0,0,1080,1440);
+    var t=document.createElement('canvas'); t.width=1080; t.height=d.th;
+    t.getContext('2d').drawImage(m,col*1080,r*d.th,1080,d.th,0,0,1080,d.th);
     var name=(n<10?'0':'')+n+'-post-'+n+'.jpg';
     out.appendChild(download(name,t.toDataURL('image/jpeg',0.92)));
   }
 });
 document.getElementById('prev').addEventListener('click',function(){
   if(!img){alert('Pehle picture select karen');return;}
-  var d=dims(), m=renderMaster(), gap=8, tw=360, th=480;
+  // Simulate the real profile grid: grid shows 3:4. 3:4 tile = full. 4:5 tile = centre 1010px only (35px each side gayab).
+  var d=dims(), m=renderMaster(), gap=8, tw=360;
+  var srcX=0, srcW=1080; if(d.th===1350){srcX=35; srcW=1010;}
+  var th=Math.round(tw*d.th/srcW);
   var p=document.createElement('canvas'); p.width=d.cols*tw+gap*(d.cols-1); p.height=d.rows*th+gap*(d.rows-1);
   var x=p.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,p.width,p.height);
   for(var r=0;r<d.rows;r++)for(var col=0;col<d.cols;col++){
-    x.drawImage(m,col*1080,r*1440,1080,1440,col*(tw+gap),r*(th+gap),tw,th);
+    x.drawImage(m,col*1080+srcX,r*d.th,srcW,d.th,col*(tw+gap),r*(th+gap),tw,th);
   }
   var out=document.getElementById('out'); out.innerHTML='<h3>Grid preview (jaisi profile par lagegi):</h3>';
   out.appendChild(download('grid-preview.jpg',p.toDataURL('image/jpeg',0.92)));
