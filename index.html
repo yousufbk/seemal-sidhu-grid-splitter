@@ -25,13 +25,13 @@ small{color:#555}
 @media (max-width:880px){.wrap{flex-direction:column}.panel{width:100%;flex:none;position:static;max-height:none}}
 </style></head><body>
 <header><h2>Seemal Sidhu — Puzzle Grid Splitter</h2>
-<small>One big picture, cut into equal Instagram posts. Everything runs in your browser — your picture is never uploaded anywhere.</small></header>
+<small>One big picture, cut into Instagram posts using the proven bleed method. Everything runs in your browser — your picture is never uploaded anywhere.</small></header>
 
 <div class="wrap">
 <div class="panel">
   <p class="note"><b>How to use:</b><br>
   1. Select a picture<br>
-  2. Choose layout, format and mode<br>
+  2. Choose layout and mode<br>
   3. <b>Drag</b> the picture to position it. <b>Scroll / pinch / use + and −</b> to make it bigger or smaller<br>
   4. Click “Create Tiles”<br>
   5. Post the tiles on Instagram in order: <b>01 first, then 02, 03…</b></p>
@@ -46,12 +46,6 @@ small{color:#555}
   <option value="3x2" selected>3 x 2 (6 posts)</option>
   <option value="3x3">3 x 3 (9 posts)</option>
   <option value="3x4">3 x 4 (12 posts)</option>
-  </select></label></div>
-
-  <div class="row"><label>Format:<br>
-  <select id="format">
-  <option value="1440" selected>3:4 — 1080 x 1440 (grid crop: 0 px, recommended)</option>
-  <option value="1350">4:5 Safe — 1080 x 1350 (35 px side buffer)</option>
   </select></label></div>
 
   <div class="row"><label>Mode:<br>
@@ -72,29 +66,33 @@ small{color:#555}
   <button id="reset" type="button">Reset position</button>
   </div>
 
-  <p class="note"><b>Exact grid buffer (verified):</b> the profile grid shows every post at 3:4.
-  3:4 format = <b>0 px</b> cropped. 4:5 format = <b>35 px left + 35 px right</b> hidden in grid view only (the centre 1010 px shows; the full post still shows when opened). Square = 135 px per side.
-  Keep faces, text and logos inside the <b>red dashed safe zone</b> (80 px from every tile edge). In 4:5, the orange lines mark the 35 px that will disappear in the grid — background only there.</p>
+  <p class="note"><b>The proven bleed method — built in automatically:</b><br>
+  Your picture is sliced into <b>1010 x 1350</b> sections. That is the part Instagram actually shows in the profile grid.<br>
+  Every tile is exported at <b>1080 x 1350</b>, with <b>35 px of extra picture added on the left and on the right</b>, taken from the neighbouring section. At the outer edges, the extra is made by extending the edge of the picture.<br>
+  When you post, Instagram's grid crop eats that extra 35 px — <b>not your picture</b> — so the sections join perfectly and nothing looks cut. Open any single post and you will see the full 1080 px; the extra is hidden only in grid view.<br>
+  <b>Safe zone</b> (red dashed) is a separate guide: keep faces, text and logos inside it, away from the cut lines.</p>
 
-  <div class="row"><button class="main" id="go" type="button">Create Tiles</button></div>
+  <div class="row"><button class="main" id="go" type="button">Create Tiles (1080 x 1350, bleed included)</button></div>
   <div class="row"><button class="sec" id="prev" type="button">Download Grid Preview (as seen on Instagram)</button></div>
   <div id="out"></div>
 </div>
 
 <div class="stage">
   <canvas id="cv" width="640" height="570"></canvas>
-  <p><small>Drag to move &nbsp;•&nbsp; Scroll or pinch to zoom &nbsp;•&nbsp; White lines = cut lines &nbsp;•&nbsp; Red dashed = safe zone</small></p>
+  <p><small>This preview is exactly what the profile grid will show (the visible 1010 px sections, joined). &nbsp;•&nbsp; Drag to move &nbsp;•&nbsp; Scroll or pinch to zoom &nbsp;•&nbsp; White lines = cut lines &nbsp;•&nbsp; Red dashed = safe zone</small></p>
 </div>
 </div>
 
 <script>
 "use strict";
+// Proven bleed method constants:
+// visible section per post in the grid = 1010 x 1350; upload tile = 1080 x 1350 (35 px bleed on each side)
+var VIS_W=1010, VIS_H=1350, BLEED=35, TILE_W=1080, TILE_H=1350;
 var img=null, dx=0, dy=0;
 var pointers={}, pinchDist=0;
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 function layout(){var v=document.getElementById('layout').value.split('x');return {cols:+v[0], rows:+v[1]};}
-function tileH(){return +document.getElementById('format').value;}
-function dims(){var L=layout(),th=tileH();return {W:L.cols*1080, H:L.rows*th, cols:L.cols, rows:L.rows, th:th};}
+function dims(){var L=layout();return {W:L.cols*VIS_W, H:L.rows*VIS_H, cols:L.cols, rows:L.rows};}
 function zoomVal(){return +document.getElementById('zoom').value;}
 function placement(){
   var d=dims(), mode=document.getElementById('mode').value;
@@ -110,13 +108,14 @@ function quality(){
   if(!img){w.style.display='none';o.style.display='none';return;}
   if(img.width<d.W){
     w.style.display='block'; o.style.display='none';
-    w.innerHTML='<b>Quality warning:</b> your picture is '+img.width+' x '+img.height+' px. This layout needs at least <b>'+d.W+' px wide</b>. Tiles will still be created, but they may look slightly blurry.';
+    w.innerHTML='<b>Quality warning:</b> your picture is '+img.width+' x '+img.height+' px. This layout needs at least <b>'+d.W+' px wide</b> ('+d.cols+' x '+VIS_W+'). Tiles will still be created, but they may look slightly blurry.';
   } else {
     o.style.display='block'; w.style.display='none';
-    o.innerHTML='<b>Quality OK:</b> picture is '+img.width+' x '+img.height+' px — enough for this layout ('+d.W+' x '+d.H+').';
+    o.innerHTML='<b>Quality OK:</b> picture is '+img.width+' x '+img.height+' px — enough for this layout ('+d.W+' x '+d.H+' visible).';
   }
 }
 function renderMaster(){
+  // The visible master: exactly what the profile grid will show, joined together
   var d=dims(), c=document.createElement('canvas'); c.width=d.W; c.height=d.H;
   var x=c.getContext('2d');
   x.fillStyle=document.getElementById('bg').value; x.fillRect(0,0,d.W,d.H);
@@ -124,6 +123,29 @@ function renderMaster(){
   var p=placement();
   x.drawImage(img,p.cx,p.cy,p.nw,p.nh);
   return c;
+}
+function mirrorStrip(master, sx, sy){
+  // A 35 px strip mirrored horizontally — used as bleed at the outer edges of the whole picture
+  var s=document.createElement('canvas'); s.width=BLEED; s.height=VIS_H;
+  var x=s.getContext('2d');
+  x.translate(BLEED,0); x.scale(-1,1);
+  x.drawImage(master, sx, sy, BLEED, VIS_H, 0, 0, BLEED, VIS_H);
+  return s;
+}
+function makeTile(master, r, c){
+  // One upload tile: 1080 x 1350 = 35 px bleed + 1010 px visible section + 35 px bleed
+  var d=dims();
+  var t=document.createElement('canvas'); t.width=TILE_W; t.height=TILE_H;
+  var x=t.getContext('2d'), sx=c*VIS_W, sy=r*VIS_H;
+  // centre: the visible section
+  x.drawImage(master, sx, sy, VIS_W, VIS_H, BLEED, 0, VIS_W, VIS_H);
+  // left bleed: neighbouring picture if there is one, otherwise mirrored edge
+  if(c>0){ x.drawImage(master, sx-BLEED, sy, BLEED, VIS_H, 0, 0, BLEED, VIS_H); }
+  else { x.drawImage(mirrorStrip(master, sx, sy), 0, 0); }
+  // right bleed
+  if(c<d.cols-1){ x.drawImage(master, sx+VIS_W, sy, BLEED, VIS_H, BLEED+VIS_W, 0, BLEED, VIS_H); }
+  else { x.drawImage(mirrorStrip(master, sx+VIS_W-BLEED, sy), BLEED+VIS_W, 0); }
+  return t;
 }
 function draw(){
   var d=dims(), m=renderMaster();
@@ -133,15 +155,8 @@ function draw(){
   var pw=Math.round(d.W*sc), ph=Math.round(d.H*sc);
   cv.width=pw; cv.height=ph;
   ctx.drawImage(m,0,0,pw,ph);
-  var sx=pw/d.W, sy=ph/d.H, tw=1080*sx, th=d.th*sy;
+  var sx=pw/d.W, sy=ph/d.H, tw=VIS_W*sx, th=VIS_H*sy;
   if(document.getElementById('safe').checked && img){
-    if(d.th===1350){
-      ctx.strokeStyle='orange'; ctx.setLineDash([6,5]); ctx.lineWidth=2;
-      for(var r2=0;r2<d.rows;r2++)for(var c2=0;c2<d.cols;c2++){
-        ctx.beginPath();ctx.moveTo(c2*tw+35*sx,r2*th);ctx.lineTo(c2*tw+35*sx,(r2+1)*th);ctx.stroke();
-        ctx.beginPath();ctx.moveTo((c2+1)*tw-35*sx,r2*th);ctx.lineTo((c2+1)*tw-35*sx,(r2+1)*th);ctx.stroke();
-      }
-    }
     ctx.strokeStyle='red'; ctx.setLineDash([9,7]); ctx.lineWidth=2;
     for(var r=0;r<d.rows;r++)for(var col=0;col<d.cols;col++){
       ctx.strokeRect(col*tw+80*sx, r*th+80*sy, tw-160*sx, th-160*sy);
@@ -163,7 +178,6 @@ function setZoom(newZ, clientX, clientY){
   var fx=(Mx-p.cx)/p.nw, fy=(My-p.cy)/p.nh;
   document.getElementById('zoom').value=newZ;
   var p2=placement();
-  // Desired cx/cy so the same image point stays under the cursor after zooming
   var desiredCx=Mx-fx*p2.nw, desiredCy=My-fy*p2.nh;
   dx=desiredCx-(d.W-p2.nw)/2; dy=desiredCy-(d.H-p2.nh)/2;
   draw();
@@ -175,7 +189,7 @@ document.getElementById('f').addEventListener('change',function(e){
   im.onload=function(){img=im; resetPos(); quality();};
   im.src=URL.createObjectURL(file);
 });
-['layout','mode','bg','safe','format'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){quality();draw();});});
+['layout','mode','bg','safe'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){quality();draw();});});
 document.getElementById('zoom').addEventListener('input',function(){draw();});
 document.getElementById('zin').addEventListener('click',function(){setZoom(zoomVal()*1.15);});
 document.getElementById('zout').addEventListener('click',function(){setZoom(zoomVal()/1.15);});
@@ -220,25 +234,23 @@ function download(name,href){var a=document.createElement('a');a.download=name;a
 document.getElementById('go').addEventListener('click',function(){
   if(!img){alert('Please select a picture first.');return;}
   var d=dims(), m=renderMaster(), out=document.getElementById('out');
-  out.innerHTML='<h3>Post in this order — 01 first, then 02, 03…</h3>';
+  out.innerHTML='<h3>Post in this order — 01 first, then 02, 03…</h3><p><small>Each tile is 1080 x 1350 with the 35 px bleed already added on both sides.</small></p>';
   var n=0;
   for(var r=d.rows-1;r>=0;r--)for(var col=d.cols-1;col>=0;col--){ n++;
-    var t=document.createElement('canvas'); t.width=1080; t.height=d.th;
-    t.getContext('2d').drawImage(m,col*1080,r*d.th,1080,d.th,0,0,1080,d.th);
+    var t=makeTile(m,r,col);
     var name=(n<10?'0':'')+n+'-post-'+n+'.jpg';
     out.appendChild(download(name,t.toDataURL('image/jpeg',0.92)));
   }
 });
 document.getElementById('prev').addEventListener('click',function(){
   if(!img){alert('Please select a picture first.');return;}
-  // Simulate the real profile grid: grid shows 3:4. A 3:4 tile shows in full; a 4:5 tile shows only the centre 1010 px (35 px each side hidden).
-  var d=dims(), m=renderMaster(), gap=8, tw=360;
-  var srcX=0, srcW=1080; if(d.th===1350){srcX=35; srcW=1010;}
-  var th=Math.round(tw*d.th/srcW);
+  // Simulate the real profile grid FROM the upload tiles: Instagram shows only the centre 1010 px of each 1080 px tile
+  var d=dims(), m=renderMaster(), gap=6, tw=303, th=405;
   var p=document.createElement('canvas'); p.width=d.cols*tw+gap*(d.cols-1); p.height=d.rows*th+gap*(d.rows-1);
   var x=p.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,p.width,p.height);
   for(var r=0;r<d.rows;r++)for(var col=0;col<d.cols;col++){
-    x.drawImage(m,col*1080+srcX,r*d.th,srcW,d.th,col*(tw+gap),r*(th+gap),tw,th);
+    var t=makeTile(m,r,col);
+    x.drawImage(t, BLEED, 0, VIS_W, VIS_H, col*(tw+gap), r*(th+gap), tw, th);
   }
   var out=document.getElementById('out'); out.innerHTML='<h3>Grid preview (as it will look on your profile):</h3>';
   out.appendChild(download('grid-preview.jpg',p.toDataURL('image/jpeg',0.92)));
