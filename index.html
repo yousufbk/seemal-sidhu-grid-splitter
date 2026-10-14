@@ -2,76 +2,118 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Seemal Sidhu — Instagram Puzzle Grid Splitter</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:920px;margin:20px auto;padding:0 14px;color:#222;background:#fff}
-h2{margin:6px 0} .note{background:#fff7e6;border:1px solid #f0d48a;padding:10px 12px;border-radius:8px}
-.warn{background:#ffe9e9;border:1px solid #e79a9a;padding:10px 12px;border-radius:8px;display:none}
-.ok{background:#e9f7ec;border:1px solid #9ac9a5;padding:10px 12px;border-radius:8px;display:none}
-canvas{max-width:100%;border:1px solid #ccc;touch-action:none;background:#f7efe8}
-.row{margin:12px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-button{padding:11px 18px;font-size:16px;cursor:pointer;border-radius:8px}
-select,input[type=range]{font-size:16px}
-a.dl{display:inline-block;margin:4px 8px 4px 0;padding:8px 12px;background:#222;color:#fff;border-radius:6px;text-decoration:none}
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0;color:#222;background:#fafafa}
+header{padding:14px 20px 4px}
+h2{margin:0 0 4px}
+.wrap{display:flex;gap:20px;align-items:flex-start;padding:10px 20px 20px}
+.panel{width:350px;flex:0 0 350px;background:#fff;border:1px solid #e3e3e3;border-radius:10px;padding:14px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.stage{flex:1;min-width:0;text-align:center}
+canvas{border:1px solid #ccc;background:#f7efe8;touch-action:none;max-width:100%}
+.note{background:#fff7e6;border:1px solid #f0d48a;padding:10px 12px;border-radius:8px;font-size:14px}
+.warn{background:#ffe9e9;border:1px solid #e79a9a;padding:10px 12px;border-radius:8px;display:none;font-size:14px;margin-top:10px}
+.ok{background:#e9f7ec;border:1px solid #9ac9a5;padding:10px 12px;border-radius:8px;display:none;font-size:14px;margin-top:10px}
+.row{margin:12px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label{font-size:14px}
+select,input[type=range]{font-size:15px}
+button{padding:10px 16px;font-size:15px;cursor:pointer;border-radius:8px}
+button.main{background:#222;color:#fff;border:none;width:100%}
+button.sec{width:100%}
+.zbtn{width:42px;padding:8px 0;font-size:18px}
+a.dl{display:inline-block;margin:4px 6px 4px 0;padding:8px 12px;background:#222;color:#fff;border-radius:6px;text-decoration:none;font-size:14px}
 small{color:#555}
+@media (max-width:880px){.wrap{flex-direction:column}.panel{width:100%;flex:none;position:static;max-height:none}}
 </style></head><body>
-<h2>Seemal Sidhu — Puzzle Grid Splitter</h2>
-<p class="note"><b>Use:</b> 1) Picture select karen &nbsp;2) Layout + Format + Fit/Crop chunen &nbsp;3) Picture ko <b>drag</b> karke set karen (face cut-line par na ho) &nbsp;4) “Tiles Banao” dabayen &nbsp;5) Tiles <b>01, 02, 03…</b> isi order me Instagram par post karen.<br>
-<b>Exact grid buffer (net se verified):</b> Profile grid har post ko <b>3:4</b> me dikhati hai. <b>3:4 format (1080×1440) = grid crop 0px</b> — kuch gayab nahi hota. <b>4:5 format (1080×1350) = grid me left 35px + right 35px gayab</b> (sirf centre 1010px dikhta hai, post kholne par poora dikhta hai). Square (1080×1080) = 135px har side se gayab.<br>
-<b>Safe zone:</b> red dashed line ke andar face / text / logo rakhen — har tile ke kinare se 80px door. 4:5 me orange lines = wo 35px hissa jo grid me nahi dikhega, us me sirf background rakhen.</p>
+<header><h2>Seemal Sidhu — Puzzle Grid Splitter</h2>
+<small>One big picture, cut into equal Instagram posts. Everything runs in your browser — your picture is never uploaded anywhere.</small></header>
 
-<div class="row"><input type="file" id="f" accept="image/*"></div>
-<div id="qwarn" class="warn"></div><div id="qok" class="ok"></div>
+<div class="wrap">
+<div class="panel">
+  <p class="note"><b>How to use:</b><br>
+  1. Select a picture<br>
+  2. Choose layout, format and mode<br>
+  3. <b>Drag</b> the picture to position it. <b>Scroll / pinch / use + and −</b> to make it bigger or smaller<br>
+  4. Click “Create Tiles”<br>
+  5. Post the tiles on Instagram in order: <b>01 first, then 02, 03…</b></p>
 
-<div class="row">
-<label>Layout:
-<select id="layout">
-<option value="1x1">Single post (1 tile)</option>
-<option value="3x1">3 x 1 — ek row (3 posts)</option>
-<option value="3x2" selected>3 x 2 (6 posts)</option>
-<option value="3x3">3 x 3 (9 posts)</option>
-<option value="3x4">3 x 4 (12 posts)</option>
-</select></label>
-<label>Format:
-<select id="format">
-<option value="1440" selected>3:4 — 1080 x 1440 (grid crop 0, recommended)</option>
-<option value="1350">4:5 Safe — 1080 x 1350 (35px side buffer)</option>
-</select></label>
-<label>Mode:
-<select id="mode">
-<option value="crop" selected>Crop — tile poori bhari, kinare cut</option>
-<option value="fit">Fit — poori picture, side background</option>
-</select></label>
-<label>Background (Fit mode): <input type="color" id="bg" value="#f7efe8"></label>
+  <div class="row"><input type="file" id="f" accept="image/*"></div>
+  <div id="qwarn" class="warn"></div><div id="qok" class="ok"></div>
+
+  <div class="row"><label>Layout:<br>
+  <select id="layout">
+  <option value="1x1">Single post (1 tile)</option>
+  <option value="3x1">3 x 1 — one row (3 posts)</option>
+  <option value="3x2" selected>3 x 2 (6 posts)</option>
+  <option value="3x3">3 x 3 (9 posts)</option>
+  <option value="3x4">3 x 4 (12 posts)</option>
+  </select></label></div>
+
+  <div class="row"><label>Format:<br>
+  <select id="format">
+  <option value="1440" selected>3:4 — 1080 x 1440 (grid crop: 0 px, recommended)</option>
+  <option value="1350">4:5 Safe — 1080 x 1350 (35 px side buffer)</option>
+  </select></label></div>
+
+  <div class="row"><label>Mode:<br>
+  <select id="mode">
+  <option value="crop" selected>Crop — fills every tile, edges cut</option>
+  <option value="fit">Fit — whole picture, background on sides</option>
+  </select></label>
+  <label>Background (Fit): <input type="color" id="bg" value="#f7efe8"></label></div>
+
+  <div class="row">
+  <button class="zbtn" id="zout" type="button" title="Zoom out">−</button>
+  <input type="range" id="zoom" min="0.3" max="4" step="0.01" value="1" style="flex:1">
+  <button class="zbtn" id="zin" type="button" title="Zoom in">+</button>
+  </div>
+
+  <div class="row">
+  <label><input type="checkbox" id="safe" checked> Show safe zone</label>
+  <button id="reset" type="button">Reset position</button>
+  </div>
+
+  <p class="note"><b>Exact grid buffer (verified):</b> the profile grid shows every post at 3:4.
+  3:4 format = <b>0 px</b> cropped. 4:5 format = <b>35 px left + 35 px right</b> hidden in grid view only (the centre 1010 px shows; the full post still shows when opened). Square = 135 px per side.
+  Keep faces, text and logos inside the <b>red dashed safe zone</b> (80 px from every tile edge). In 4:5, the orange lines mark the 35 px that will disappear in the grid — background only there.</p>
+
+  <div class="row"><button class="main" id="go" type="button">Create Tiles</button></div>
+  <div class="row"><button class="sec" id="prev" type="button">Download Grid Preview (as seen on Instagram)</button></div>
+  <div id="out"></div>
 </div>
 
-<div class="row">
-<label>Zoom: <input type="range" id="zoom" min="1" max="3" step="0.01" value="1"></label>
-<label><input type="checkbox" id="safe" checked> Safe zone dikhao</label>
-<button id="reset" type="button">Position reset</button>
+<div class="stage">
+  <canvas id="cv" width="640" height="570"></canvas>
+  <p><small>Drag to move &nbsp;•&nbsp; Scroll or pinch to zoom &nbsp;•&nbsp; White lines = cut lines &nbsp;•&nbsp; Red dashed = safe zone</small></p>
 </div>
-
-<canvas id="cv" width="900" height="800"></canvas>
-<p><small>Preview ko mouse ya ungli se drag karen. White lines = cut lines (jahan se picture kategi).</small></p>
-
-<div class="row"><button id="go" type="button">Tiles Banao</button>
-<button id="prev" type="button">Grid Preview Download (jaisa Insta grid me dikhega)</button></div>
-<div id="out"></div>
+</div>
 
 <script>
 "use strict";
-var img=null, dx=0, dy=0, dragging=false, lastX=0, lastY=0;
+var img=null, dx=0, dy=0;
+var pointers={}, pinchDist=0;
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 function layout(){var v=document.getElementById('layout').value.split('x');return {cols:+v[0], rows:+v[1]};}
 function tileH(){return +document.getElementById('format').value;}
 function dims(){var L=layout(),th=tileH();return {W:L.cols*1080, H:L.rows*th, cols:L.cols, rows:L.rows, th:th};}
+function zoomVal(){return +document.getElementById('zoom').value;}
+function placement(){
+  var d=dims(), mode=document.getElementById('mode').value;
+  var base=(mode==='crop')?Math.max(d.W/img.width,d.H/img.height):Math.min(d.W/img.width,d.H/img.height);
+  var s=base*zoomVal(), nw=img.width*s, nh=img.height*s;
+  var cx=(d.W-nw)/2+dx, cy=(d.H-nh)/2+dy;
+  cx=Math.min(Math.max(cx,Math.min(0,d.W-nw)),Math.max(0,d.W-nw));
+  cy=Math.min(Math.max(cy,Math.min(0,d.H-nh)),Math.max(0,d.H-nh));
+  return {nw:nw,nh:nh,cx:cx,cy:cy};
+}
 function quality(){
   var d=dims(), w=document.getElementById('qwarn'), o=document.getElementById('qok');
   if(!img){w.style.display='none';o.style.display='none';return;}
-  if(img.width < d.W){
+  if(img.width<d.W){
     w.style.display='block'; o.style.display='none';
-    w.innerHTML='<b>Quality warning:</b> Aapki picture '+img.width+' x '+img.height+'px hai, is layout ke liye kam se kam <b>'+d.W+'px wide</b> chahiye. Tiles ban jayengi lekin thori blur ho sakti hain.';
+    w.innerHTML='<b>Quality warning:</b> your picture is '+img.width+' x '+img.height+' px. This layout needs at least <b>'+d.W+' px wide</b>. Tiles will still be created, but they may look slightly blurry.';
   } else {
     o.style.display='block'; w.style.display='none';
-    o.innerHTML='<b>Quality OK:</b> Picture '+img.width+' x '+img.height+'px hai — is layout ('+d.W+' x '+d.H+') ke liye kaafi hai.';
+    o.innerHTML='<b>Quality OK:</b> picture is '+img.width+' x '+img.height+' px — enough for this layout ('+d.W+' x '+d.H+').';
   }
 }
 function renderMaster(){
@@ -79,24 +121,21 @@ function renderMaster(){
   var x=c.getContext('2d');
   x.fillStyle=document.getElementById('bg').value; x.fillRect(0,0,d.W,d.H);
   if(!img) return c;
-  var mode=document.getElementById('mode').value, zoom=+document.getElementById('zoom').value;
-  var base = (mode==='crop') ? Math.max(d.W/img.width, d.H/img.height) : Math.min(d.W/img.width, d.H/img.height);
-  var s=base*zoom, nw=img.width*s, nh=img.height*s;
-  // centre first, then apply drag offset, clamped so the picture never leaves the canvas frame
-  var cx=(d.W-nw)/2+dx, cy=(d.H-nh)/2+dy;
-  cx=Math.min(Math.max(cx, Math.min(0,d.W-nw)), Math.max(0,d.W-nw));
-  cy=Math.min(Math.max(cy, Math.min(0,d.H-nh)), Math.max(0,d.H-nh));
-  x.drawImage(img,cx,cy,nw,nh);
+  var p=placement();
+  x.drawImage(img,p.cx,p.cy,p.nw,p.nh);
   return c;
 }
 function draw(){
   var d=dims(), m=renderMaster();
-  var pw=Math.min(900,d.W), ph=Math.round(pw*d.H/d.W);
+  var stage=document.querySelector('.stage');
+  var availW=Math.max(300,stage.clientWidth-4), availH=Math.max(300,window.innerHeight*0.84);
+  var sc=Math.min(availW/d.W, availH/d.H);
+  var pw=Math.round(d.W*sc), ph=Math.round(d.H*sc);
   cv.width=pw; cv.height=ph;
   ctx.drawImage(m,0,0,pw,ph);
   var sx=pw/d.W, sy=ph/d.H, tw=1080*sx, th=d.th*sy;
   if(document.getElementById('safe').checked && img){
-    if(d.th===1350){ // 4:5: orange lines at 35px = grid-crop buffer, outside it grid me gayab
+    if(d.th===1350){
       ctx.strokeStyle='orange'; ctx.setLineDash([6,5]); ctx.lineWidth=2;
       for(var r2=0;r2<d.rows;r2++)for(var c2=0;c2<d.cols;c2++){
         ctx.beginPath();ctx.moveTo(c2*tw+35*sx,r2*th);ctx.lineTo(c2*tw+35*sx,(r2+1)*th);ctx.stroke();
@@ -109,34 +148,79 @@ function draw(){
     }
     ctx.setLineDash([]);
   }
-  ctx.strokeStyle='#fff'; ctx.lineWidth=4;
+  ctx.strokeStyle='#fff'; ctx.lineWidth=3;
   for(var col=1;col<d.cols;col++){ctx.beginPath();ctx.moveTo(col*tw,0);ctx.lineTo(col*tw,ph);ctx.stroke();}
   for(var r=1;r<d.rows;r++){ctx.beginPath();ctx.moveTo(0,r*th);ctx.lineTo(pw,r*th);ctx.stroke();}
+}
+function setZoom(newZ, clientX, clientY){
+  if(!img){document.getElementById('zoom').value=newZ; return;}
+  newZ=Math.min(4,Math.max(0.3,newZ));
+  var rect=cv.getBoundingClientRect(), d=dims();
+  var mx=(clientX===undefined?rect.left+rect.width/2:clientX)-rect.left;
+  var my=(clientY===undefined?rect.top+rect.height/2:clientY)-rect.top;
+  var Mx=mx*d.W/cv.width, My=my*d.H/cv.height;
+  var p=placement();
+  var fx=(Mx-p.cx)/p.nw, fy=(My-p.cy)/p.nh;
+  document.getElementById('zoom').value=newZ;
+  var p2=placement();
+  // Desired cx/cy so the same image point stays under the cursor after zooming
+  var desiredCx=Mx-fx*p2.nw, desiredCy=My-fy*p2.nh;
+  dx=desiredCx-(d.W-p2.nw)/2; dy=desiredCy-(d.H-p2.nh)/2;
+  draw();
 }
 function resetPos(){dx=0;dy=0;document.getElementById('zoom').value=1;draw();}
 document.getElementById('f').addEventListener('change',function(e){
   var file=e.target.files[0]; if(!file)return;
-  var url=URL.createObjectURL(file); var im=new Image();
+  var im=new Image();
   im.onload=function(){img=im; resetPos(); quality();};
-  im.src=url;
+  im.src=URL.createObjectURL(file);
 });
 ['layout','mode','bg','safe','format'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){quality();draw();});});
-document.getElementById('zoom').addEventListener('input',draw);
+document.getElementById('zoom').addEventListener('input',function(){draw();});
+document.getElementById('zin').addEventListener('click',function(){setZoom(zoomVal()*1.15);});
+document.getElementById('zout').addEventListener('click',function(){setZoom(zoomVal()/1.15);});
 document.getElementById('reset').addEventListener('click',resetPos);
-cv.addEventListener('pointerdown',function(e){if(!img)return;dragging=true;lastX=e.clientX;lastY=e.clientY;cv.setPointerCapture(e.pointerId);});
-cv.addEventListener('pointermove',function(e){
-  if(!dragging)return; var d=dims();
-  var scale=d.W/cv.width;
-  dx+=(e.clientX-lastX)*scale; dy+=(e.clientY-lastY)*scale;
-  lastX=e.clientX; lastY=e.clientY; draw();
+window.addEventListener('resize',draw);
+cv.addEventListener('wheel',function(e){
+  if(!img)return; e.preventDefault();
+  var factor=(e.deltaY<0)?1.1:1/1.1;
+  setZoom(zoomVal()*factor, e.clientX, e.clientY);
+},{passive:false});
+cv.addEventListener('pointerdown',function(e){
+  if(!img)return;
+  pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  cv.setPointerCapture(e.pointerId);
+  if(Object.keys(pointers).length===2){
+    var pts=Object.values(pointers);
+    pinchDist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+  }
 });
-cv.addEventListener('pointerup',function(){dragging=false;});
-cv.addEventListener('pointercancel',function(){dragging=false;});
+cv.addEventListener('pointermove',function(e){
+  if(!pointers[e.pointerId]||!img)return;
+  var prev=pointers[e.pointerId];
+  var ddx=e.clientX-prev.x, ddy=e.clientY-prev.y;
+  pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  var d=dims(), scale=d.W/cv.width;
+  if(Object.keys(pointers).length===2){
+    var pts=Object.values(pointers);
+    var nd=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    if(pinchDist>0){
+      var midX=(pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
+      setZoom(zoomVal()*(nd/pinchDist), midX, midY);
+    }
+    pinchDist=nd;
+  } else {
+    dx+=ddx*scale; dy+=ddy*scale; draw();
+  }
+});
+function endPointer(e){delete pointers[e.pointerId]; pinchDist=0;}
+cv.addEventListener('pointerup',endPointer);
+cv.addEventListener('pointercancel',endPointer);
 function download(name,href){var a=document.createElement('a');a.download=name;a.href=href;a.className='dl';a.textContent='Download '+name;return a;}
 document.getElementById('go').addEventListener('click',function(){
-  if(!img){alert('Pehle picture select karen');return;}
+  if(!img){alert('Please select a picture first.');return;}
   var d=dims(), m=renderMaster(), out=document.getElementById('out');
-  out.innerHTML='<h3>Isi order me post karen — pehle 01, phir 02…</h3>';
+  out.innerHTML='<h3>Post in this order — 01 first, then 02, 03…</h3>';
   var n=0;
   for(var r=d.rows-1;r>=0;r--)for(var col=d.cols-1;col>=0;col--){ n++;
     var t=document.createElement('canvas'); t.width=1080; t.height=d.th;
@@ -146,8 +230,8 @@ document.getElementById('go').addEventListener('click',function(){
   }
 });
 document.getElementById('prev').addEventListener('click',function(){
-  if(!img){alert('Pehle picture select karen');return;}
-  // Simulate the real profile grid: grid shows 3:4. 3:4 tile = full. 4:5 tile = centre 1010px only (35px each side gayab).
+  if(!img){alert('Please select a picture first.');return;}
+  // Simulate the real profile grid: grid shows 3:4. A 3:4 tile shows in full; a 4:5 tile shows only the centre 1010 px (35 px each side hidden).
   var d=dims(), m=renderMaster(), gap=8, tw=360;
   var srcX=0, srcW=1080; if(d.th===1350){srcX=35; srcW=1010;}
   var th=Math.round(tw*d.th/srcW);
@@ -156,7 +240,7 @@ document.getElementById('prev').addEventListener('click',function(){
   for(var r=0;r<d.rows;r++)for(var col=0;col<d.cols;col++){
     x.drawImage(m,col*1080+srcX,r*d.th,srcW,d.th,col*(tw+gap),r*(th+gap),tw,th);
   }
-  var out=document.getElementById('out'); out.innerHTML='<h3>Grid preview (jaisi profile par lagegi):</h3>';
+  var out=document.getElementById('out'); out.innerHTML='<h3>Grid preview (as it will look on your profile):</h3>';
   out.appendChild(download('grid-preview.jpg',p.toDataURL('image/jpeg',0.92)));
 });
 draw();
